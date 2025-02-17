@@ -135,10 +135,10 @@ func (srv *SearchClient) FindUsers(req SearchRequest) (*SearchResponse, error) {
 type XMLUser struct {
 	Id        int    `xml:"id"`
 	Age       int    `xml:"age"`
-	About     string `xml:"about"`
-	Gender    string `xml:"gender"`
 	FirstName string `xml:"first_name"`
 	LastName  string `xml:"last_name"`
+	Gender    string `xml:"gender"`
+	About     string `xml:"about"`
 }
 
 type XMLUsers struct {
@@ -202,12 +202,14 @@ func FilterUsers(users []XMLUser, query string) ([]XMLUser, error) {
 	return filteredUsers, nil
 }
 
-func main() {
-	query := "dolor"
-	orderField := "Age"
-	orderBy := OrderByAsIs
-	limit := 2
-	offset := 2
+func SearchServer(w http.ResponseWriter, r *http.Request) {
+	// Читаем параметры запроса
+	query := r.URL.Query().Get("query")
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+	orderField := r.URL.Query().Get("order_field")
+	orderBy, _ := strconv.Atoi(r.URL.Query().Get("order_by"))
+
 	// read file dataset.xml
 	data, err := os.ReadFile("dataset.xml")
 	if err != nil {
@@ -241,7 +243,15 @@ func main() {
 	}
 
 	//print data
-	for _, user := range FilteredUsers[offset:end] {
-		fmt.Printf("ID: %d, Name: %s %s, Age: %d, Gender: %s, About: %s\n", user.Id, user.FirstName, user.LastName, user.Age, user.Gender, user.About)
-	}
+	result := FilteredUsers[offset:end]
+
+	// Кодируем в JSON
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(result)
+}
+
+func main() {
+	http.HandleFunc("/search", SearchServer)
+	fmt.Println("Server started at :8080")
+	_ = http.ListenAndServe(":8080", nil)
 }
