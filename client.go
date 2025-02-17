@@ -146,28 +146,6 @@ type XMLUsers struct {
 	Rows    []XMLUser `xml:"row"`
 }
 
-//func parser() {
-//	// read file dataset.xml
-//	data, err := os.ReadFile("dataset.xml")
-//	if err != nil {
-//		fmt.Println("Error reading dataset.xml:", err)
-//		return
-//	}
-//
-//	// parsing XML
-//	var users XMLUsers
-//	err = xml.Unmarshal(data, &users)
-//	if err != nil {
-//		fmt.Println("Error parsing dataset.xml:", err)
-//		return
-//	}
-//
-//	//print data
-//	for _, user := range users.Rows {
-//		fmt.Printf("ID: %d, Name: %s, Age: %d, Gender: %s, About: %s\n", user.Id, user.Name, user.Age, user.Gender, user.About)
-//	}
-//}
-
 func SortUsers(users []XMLUser, orderField string, orderBy int) error {
 	validField := map[string]bool{
 		"ID":   true,
@@ -183,7 +161,6 @@ func SortUsers(users []XMLUser, orderField string, orderBy int) error {
 	if orderBy == OrderByAsIs {
 		return nil
 	}
-
 	sort.Slice(users, func(i, j int) bool {
 		switch orderField {
 		case "ID":
@@ -209,20 +186,34 @@ func SortUsers(users []XMLUser, orderField string, orderBy int) error {
 	return nil
 }
 
+func FilterUsers(users []XMLUser, query string) ([]XMLUser, error) {
+	var filteredUsers []XMLUser
+	if query == "" {
+		filteredUsers = users
+	} else {
+		for _, user := range users {
+			fullName := strings.ToLower(user.FirstName + " " + user.LastName)
+			about := strings.ToLower(user.About)
+			if strings.Contains(fullName, strings.ToLower(query)) || strings.Contains(about, strings.ToLower(query)) {
+				filteredUsers = append(filteredUsers, user)
+			}
+		}
+	}
+	return filteredUsers, nil
+}
+
 func main() {
 	query := "dolor"
-	orderField := "Name"
-	orderBy := OrderByAsc
+	orderField := "Age"
+	orderBy := OrderByAsIs
 	limit := 2
 	offset := 2
-
 	// read file dataset.xml
 	data, err := os.ReadFile("dataset.xml")
 	if err != nil {
 		fmt.Println("Error reading dataset.xml:", err)
 		return
 	}
-
 	// parsing XML
 	var users XMLUsers
 	err = xml.Unmarshal(data, &users)
@@ -231,44 +222,26 @@ func main() {
 		return
 	}
 
-	// Фильтрация по query
-	var filteredUsers []XMLUser
+	FilteredUsers, err := FilterUsers(users.Rows, query)
 
-	// Если query пустое, возвращаем все записи без фильтрации
-	if query == "" {
-		filteredUsers = users.Rows
-	} else {
-		// Если query не пустое, ищем подстроку в Name и About
-		for _, user := range users.Rows {
-			fullName := strings.ToLower(user.FirstName + " " + user.LastName)
-			about := strings.ToLower(user.About)
-
-			// Добавляем в результат, если query встречается в имени или описании
-			if strings.Contains(fullName, strings.ToLower(query)) || strings.Contains(about, strings.ToLower(query)) {
-				filteredUsers = append(filteredUsers, user)
-			}
-		}
-	}
-
-	err = SortUsers(filteredUsers, orderField, orderBy)
+	err = SortUsers(FilteredUsers, orderField, orderBy)
 	if err != nil {
 		fmt.Println("Error sorting:", err)
 		return
 	}
 
-	// Применяем offset и limit
-	if offset > len(filteredUsers) {
-		fmt.Println("[]") // Если offset выходит за границы — пустой массив
+	if offset > len(FilteredUsers) {
+		fmt.Println("[]")
 		return
 	}
 
 	end := offset + limit
-	if end > len(filteredUsers) {
-		end = len(filteredUsers)
+	if end > len(FilteredUsers) {
+		end = len(FilteredUsers)
 	}
 
 	//print data
-	for _, user := range filteredUsers[offset:end] {
+	for _, user := range FilteredUsers[offset:end] {
 		fmt.Printf("ID: %d, Name: %s %s, Age: %d, Gender: %s, About: %s\n", user.Id, user.FirstName, user.LastName, user.Age, user.Gender, user.About)
 	}
 }
