@@ -211,7 +211,7 @@ func SortUsers(users []XMLUser, orderField string, orderBy int) error {
 
 func main() {
 	query := "dolor"
-	orderField := "ID"
+	orderField := "Name"
 	orderBy := OrderByAsc
 	limit := 2
 	offset := 2
