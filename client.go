@@ -102,7 +102,7 @@ func (srv *SearchClient) FindUsers(req SearchRequest) (*SearchResponse, error) {
 	case http.StatusUnauthorized:
 		return nil, fmt.Errorf("Bad AccessToken")
 	case http.StatusInternalServerError:
-		return nil, fmt.Errorf("SearchServer fatal error")
+		return nil, fmt.Errorf("SearchServerMock fatal error")
 	case http.StatusBadRequest:
 		errResp := SearchErrorResponse{}
 		err = json.Unmarshal(body, &errResp)
@@ -155,7 +155,7 @@ func SortUsers(users []XMLUser, orderField string, orderBy int) error {
 	if orderField == "" {
 		orderField = "Name"
 	} else if !validField[orderField] {
-		return errors.New("OrderField invalid")
+		return errors.New(ErrorBadOrderField)
 	}
 
 	if orderBy == OrderByAsIs {
@@ -205,8 +205,19 @@ func FilterUsers(users []XMLUser, query string) ([]XMLUser, error) {
 func SearchServer(w http.ResponseWriter, r *http.Request) {
 	// Читаем параметры запроса
 	query := r.URL.Query().Get("query")
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+	if err != nil || limit <= 0 {
+		http.Error(w, `{"error": "Invalid limit"}`, http.StatusBadRequest)
+		return
+	}
+	if limit > 25 {
+		limit = 25
+	}
+	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
+	if err != nil || offset < 0 {
+		http.Error(w, `{"error": "Invalid offset"}`, http.StatusBadRequest)
+		return
+	}
 	orderField := r.URL.Query().Get("order_field")
 	orderBy, _ := strconv.Atoi(r.URL.Query().Get("order_by"))
 
