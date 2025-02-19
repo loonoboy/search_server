@@ -206,18 +206,7 @@ func SearchServer(w http.ResponseWriter, r *http.Request) {
 	// Читаем параметры запроса
 	query := r.URL.Query().Get("query")
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
-	if err != nil || limit <= 0 {
-		http.Error(w, `{"error": "Invalid limit"}`, http.StatusBadRequest)
-		return
-	}
-	if limit > 25 {
-		limit = 25
-	}
 	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
-	if err != nil || offset < 0 {
-		http.Error(w, `{"error": "Invalid offset"}`, http.StatusBadRequest)
-		return
-	}
 	orderField := r.URL.Query().Get("order_field")
 	orderBy, _ := strconv.Atoi(r.URL.Query().Get("order_by"))
 
